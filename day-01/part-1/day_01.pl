@@ -1,3 +1,5 @@
+% consult('./day_01').
+% read_file('./input.txt').
 :- module(day_01,[read_file/1]).
 
 :- use_module(engine(basic_props)).
@@ -23,7 +25,6 @@ read_until_next_whitespace_shows_up(Stream, InitialValue, PreviousSum, Sum) :-
     peek_code(Stream, Code),
     Code =:= 10,
     get_line(Stream, Line),
-    line_count(Stream, _ElfOrdinal),
     length(Line, _Length),
     _Length =:= 0,
     if(
@@ -40,12 +41,15 @@ read_until_next_whitespace_shows_up(Stream, InitialValue, PreviousSum, MostCalor
             length(Line, _Length),
             number_codes(_Calories, Line),
             _Length > 0,
-            format('Next food item contains ~s calories.~n', [Line]),
-            _NextCaloriesTotal is +(PreviousSum, _Calories),
-            format('Next sum is ~d.~n~n', [_NextCaloriesTotal]),
-            read_until_next_whitespace_shows_up(Stream, InitialValue, _NextCaloriesTotal, MostCalories)
+%            format('Next food item contains ~s calories.~n', [Line]),
+            read_until_next_whitespace_shows_up(
+                Stream,
+                InitialValue,
+                +(PreviousSum, _Calories),
+                MostCalories
+            )
         ),
-        format('Most calories are ~d.~n~n', [MostCalories])
+        format('The maximum amount of calories carried by a single elf is ~d.~n~n', [MostCalories])
     ).
 
 read_file(File) :-
