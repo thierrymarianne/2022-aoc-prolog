@@ -1,5 +1,5 @@
 % consult('./day_01').
-% read_file('./input.txt').
+% read_file('./input.txt', [A, B, C]).
 :- module(day_01,[read_file/2]).
 
 :- use_module(engine(basic_props)).
@@ -77,6 +77,8 @@ read_until_next_whitespace_shows_up(
             nth(1, RevSortedSums, _First),
             nth(2, RevSortedSums, _Second),
             nth(3, RevSortedSums, _Third),
+
+            Top3 = [_First, _Second, _Third],
 
             sum_list([_First, _Second, _Third], Sum),
             format('The maximum amount of calories carried by the 3 topmost elves are ~d.~n~n', [Sum]),
