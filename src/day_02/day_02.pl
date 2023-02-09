@@ -1,6 +1,6 @@
 % consult('./day_02').
 % read_file('./input.txt').
-:- module(day_02, [read_file/2]).
+:- module(day_02, [day_02/2]).
 
 :- use_module(engine(basic_props)).
 :- use_module(engine(messages_basic)).
@@ -8,16 +8,16 @@
 :- use_module(library(format)).
 :- use_module(library(lists)).
 :- use_module(library(numlists)).
-:- use_module(library(regexp/regexp_code)).
 :- use_module(library(stream_utils)).
 :- use_module(library(terms_io)).
 :- use_module(library(terms)).
 :- use_module(library(strings)).
 :- use_module(library(when)).
 :- use_module(library(sort)).
+:- use_module(library(regexp/regexp_code)).
 
 %:- use_package(debug).
-%:- use_package(trace).
+:- use_package(trace).
 
 not_eos(Stream) :-
     peek_byte(Stream, Byte),
@@ -58,20 +58,22 @@ read_until_next_whitespace_shows_up(
         (
             get_line(Stream, Line),
             length(Line, _Length),
-            format("Line is ~s~n", Line),
-            match_posix_matches("\(aa|bb\)\(bb|aa\)", "bbaa", M),
-            format("Matches are ~p~n", M),
-            match_posix_matches("\(C\)*\(Y\)", Line, Matches),
-            format("Matches are ~p~n", Matches),
-%            format("Rest is ~s~n~n", Rest),
-            read_until_next_whitespace_shows_up(
-                Stream,
-                InitialValue,
-                Sums,
-                +(PreviousSum, _Calories),
-                MostCalories,
-                Top3
-            )
+            string(Line),
+            line(Line),
+            last(Line, _LastItem),
+            trace,
+            match_posix_matches("\(b|a\)\(a|b\)", "ba", Matches),
+            format("Line is ~q~n", [Matches]),
+            match_posix("66**", Line, Matches, Rest),
+            format("Matches are ~q~n", [Rest, Matches])
+%            read_until_next_whitespace_shows_up(
+%                Stream,
+%                InitialValue,
+%                Sums,
+%                +(PreviousSum, _Calories),
+%                MostCalories,
+%                Top3
+%            )
         ),
         (
 %            _MostCalories is MostCalories,
@@ -91,12 +93,18 @@ read_until_next_whitespace_shows_up(
         )
     ).
 
-read_file(File, [A, B, C]) :-
-    gnd(File),
-    file_exists(File),
-    format("~n~n[ Opening file ~q ]~n~n", ['./input.txt']),
+day_02(File, [A, B, C]) :-
+    working_directory(_CurrentDir, '/home/sh4l/labodev/repositories/studying/advent-of-code/src'),
+    working_directory(_d, _d),
+    format("Current dir is ~q~n~n", _d),
 
-    open(File, read, _Stream),
+    atom_concat([_d, '/day_02/', File], AbsoluteFilePath),
+    
+    gnd(AbsoluteFilePath),
+    file_exists(AbsoluteFilePath),
+    format("~n~n[ Opening file ~q ]~n~n", [AbsoluteFilePath]),
+
+    open(AbsoluteFilePath, read, _Stream),
 
     read_until_next_whitespace_shows_up(
         _Stream,
