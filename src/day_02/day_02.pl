@@ -5,7 +5,7 @@
 
 not_eos(Stream) :-
     \+at_end_of_stream(Stream).
-    
+
 print_choice_rock(Choice, Translation) :-
     (
         Choice = "A";
