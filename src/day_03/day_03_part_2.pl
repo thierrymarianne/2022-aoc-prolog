@@ -1,5 +1,5 @@
-% swipl -s ./src/day_03/day_03.pl -g 'find_solution(Solution).'
-:- module(day_03, [find_solution/1]).
+% swipl -s ./src/day_03/day_03_part_2.pl -g 'find_solution(Solution).'
+:- module(day_03_part_2, [find_solution/1]).
 
 not_eos(Stream) :-
     \+at_end_of_stream(Stream).
@@ -37,33 +37,32 @@ what_priority(Letter, Priority) :-
         Priority is CharCode - 65 + 27
     .
 
-read_until_next_whitespace_shows_up(Stream, PreviousSum, SummedPriorities) :-
+next_rucksack(Stream, Rucksack) :-
+    read_line_to_string(Stream, Line),
+    format("Line is \"~s\"~n~n", [Line]),
+
+    string_length(Line, Length),
+    format("Line length is of ~d characters~n~n", [Length]),
+
+    list_integers(Length, [Length], IntList),
+    format("Integers list is \"~p\"~n~n", [IntList]),
+
+    in_compartment(Line, IntList, Rucksack),
+    format("Item in first compartment is \"~q\"~n~n", [Rucksack]).
+
+read_until_next_whitespace_shows_up(Stream, AllPreviousPriorities, ConcatenatedPriorities) :-
     (
         not_eos(Stream) ->
-            read_line_to_string(Stream, Line),
-            format("Line is \"~s\"~n~n", [Line]),
-
-            string_length(Line, Length),
-            format("Line length is of ~d characters~n~n", [Length]),
-
-            CompartmentCapacity is Length // 2,
-
-            list_integers(CompartmentCapacity, [CompartmentCapacity], IntList),
-            format("Integers list is \"~p\"~n~n", [IntList]),
-
-            in_compartment(Line, IntList, FirstCompartment),
-            format("Item in first compartment is \"~q\"~n~n", [FirstCompartment]),
-
-            maplist(plus(CompartmentCapacity), IntList, SecondCompartmentIntList),
-            format("Second compartment indices are \"~q\"~n~n", [SecondCompartmentIntList]),
-            in_compartment(Line, SecondCompartmentIntList, SecondCompartment),
-            format("Item in second compartment is \"~q\"~n~n", [SecondCompartment]),
+            next_rucksack(Stream, FirstRucksack),
+            next_rucksack(Stream, SecondRucksack),
+            next_rucksack(Stream, ThirdRucksack),
 
             findall(
                 Priority,
                 (
-                    member(Letter, SecondCompartment),
-                    member(Letter, FirstCompartment),
+                    member(Letter, FirstRucksack),
+                    member(Letter, SecondRucksack),
+                    member(Letter, ThirdRucksack),
                     what_priority(Letter, Priority)
                 ),
                 Priorities
@@ -73,12 +72,15 @@ read_until_next_whitespace_shows_up(Stream, PreviousSum, SummedPriorities) :-
             length(Priorities, HowManyItems),
             format("Found ~d items of priority ~d~n~n", [HowManyItems, CommonItemPriority]),
 
-            format("Current priority sum is ~d~n~n", [PreviousSum + (CommonItemPriority)]),
+            append(AllPreviousPriorities, [CommonItemPriority], AllPriorities),
+            format("Current priorities are ~q~n~n", [AllPriorities]),
 
-            read_until_next_whitespace_shows_up(Stream, PreviousSum + (CommonItemPriority), SummedPriorities)
+            read_until_next_whitespace_shows_up(Stream, AllPriorities, ConcatenatedPriorities)
         ;
-            SummedPriorities is PreviousSum,
-            format('Summed priorities is ~d.~n~n', [SummedPriorities]),
+            ConcatenatedPriorities = AllPreviousPriorities,
+            format('Concatenated priorities are ~q.~n~n', [ConcatenatedPriorities]),
+            sum_list(ConcatenatedPriorities, Sum),
+            format('Summed priorities is ~d.~n~n', [Sum]),
             close(Stream),
             format('Closed stream.~n~n', []),
             halt
@@ -96,4 +98,4 @@ find_solution(Solution) :-
 
     open(AbsoluteFilePath, read, Stream, [buffer(line), close_on_abort(true)]),
 
-    read_until_next_whitespace_shows_up(Stream, 0, Solution).
+    read_until_next_whitespace_shows_up(Stream, [], Solution).
