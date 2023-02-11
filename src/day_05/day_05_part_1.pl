@@ -19,7 +19,6 @@ nth_crate_item(N, Matches, Stacks, StackOut) :-
         nth1(N, Stacks, NthCol),
         StackOut = [NthCol]
     ).
-%    format("Stack out: ~p~n", [StackOut]).
 
 arrangement(Matches, Stacks, StackOut) :-
     nth_crate_item(1, Matches, Stacks, FirstStack),
