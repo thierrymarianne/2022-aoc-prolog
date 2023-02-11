@@ -7,3 +7,10 @@ help: doc
 
 shell: ## Run Ciao shell
 	@/bin/bash -c '( cd src/day_02 && CIAOALIASPATH="$$(pwd)" prolog )'
+
+day_05_part_1:  ## Run day 05 part 1
+	swipl -s './src/day_05/day_05_part_1.pl' -g 'find_solution(X).'
+
+day_05_part_2:  ## Run day 05 part 2
+	swipl -s './src/day_05/day_05_part_2.pl' -g 'find_solution(X).'
+

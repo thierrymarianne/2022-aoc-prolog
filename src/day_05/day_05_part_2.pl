@@ -1,4 +1,4 @@
-% swipl -s ./src/day_05/day_05_part_1_sample.pl -g 'find_solution(Solution).'
+% swipl -s ./src/day_05/day_05_part_1.pl -g 'find_solution(Solution).'
 :- module(day_05_part_2_sample, [find_solution/1]).
 
 not_eos(Stream) :-
@@ -24,17 +24,35 @@ arrangement(Matches, Stacks, StackOut) :-
     nth_crate_item(1, Matches, Stacks, FirstStack),
     nth_crate_item(2, Matches, Stacks, SecondStack),
     nth_crate_item(3, Matches, Stacks, ThirdStack),
+    nth_crate_item(4, Matches, Stacks, FourthStack),
+    nth_crate_item(5, Matches, Stacks, FifthStack),
+    nth_crate_item(6, Matches, Stacks, SixthStack),
+    nth_crate_item(7, Matches, Stacks, SeventhStack),
+    nth_crate_item(8, Matches, Stacks, EighthStack),
+    nth_crate_item(9, Matches, Stacks, NinthStack),
 
     append([
         FirstStack,
         SecondStack,
-        ThirdStack
+        ThirdStack,
+        FourthStack,
+        FifthStack,
+        SixthStack,
+        SeventhStack,
+        EighthStack,
+        NinthStack
     ], StackOut).
 
 end_of_arrangement(Stream, Line) :-
 
     CratesIndicesPattern = "\s([1-9])\s(?:\s)?",
     atomic_list_concat([
+        CratesIndicesPattern,
+        CratesIndicesPattern,
+        CratesIndicesPattern,
+        CratesIndicesPattern,
+        CratesIndicesPattern,
+        CratesIndicesPattern,
         CratesIndicesPattern,
         CratesIndicesPattern,
         CratesIndicesPattern
@@ -45,18 +63,25 @@ end_of_arrangement(Stream, Line) :-
     dict_size(Matches, Size),
     Size > 0,
 
+    format("Consuming empty line~n~n", []),
     % Consume empty line
     read_line_to_string(Stream, _).
 
 parse_crates_arrangement(Stream, PreviousArrangement, Arrangement) :-
     (
         read_line_to_string(Stream, Line),
-        % format("~s~n~n", Line),
+        format("~s~n~n", Line),
 
         \+end_of_arrangement(Stream, Line),
 
         SingleCratePattern = "(?:\\[([A-Z])\\]|(\s\s\s))\s?",
         atomic_list_concat([
+            SingleCratePattern,
+            SingleCratePattern,
+            SingleCratePattern,
+            SingleCratePattern,
+            SingleCratePattern,
+            SingleCratePattern,
             SingleCratePattern,
             SingleCratePattern,
             SingleCratePattern
@@ -67,8 +92,8 @@ parse_crates_arrangement(Stream, PreviousArrangement, Arrangement) :-
         arrangement(Matches, PreviousArrangement, StackOut),
         parse_crates_arrangement(Stream, StackOut, Arrangement)
     );
-    Arrangement = PreviousArrangement.
-    % format('How are the crates arranged at first? ~q.~n~n', [Arrangement]).
+    Arrangement = PreviousArrangement,
+    format('How are the crates arranged at first? ~q.~n~n', [Arrangement]).
 
 move_crate([Crate|SourceStackRest], DestinationStack, PostMoveSourceStack, PostMoveDestinationStack) :-
     PostMoveSourceStack = SourceStackRest,
@@ -88,6 +113,10 @@ move_once(Matches, [DestIdx, DestArr], PreviousArrangement, PostMoveToDestinatio
         get_dict('source', Matches, SourceStack),
         number_string(SourceStackIndex, SourceStack),
         nth1(SourceStackIndex, PreviousArrangement, SourceStackFromArrangement),
+
+        % get_dict('how_many_crates', Matches, Crates),
+        % number_string(TotalCrates, Crates),
+        % format("Moving ~d from stack #~d to stack #~d~n", [TotalCrates, SourceStackIndex, DestIdx]),
 
         move_crate(SourceStackFromArrangement, DestArr, PostMoveSourceStack, PostMoveDestinationStack),
 
@@ -119,7 +148,6 @@ sublist([X|L1], N, SL, R) :-
 
 loop(HowManyTimes, Matches, PreviousArrangement, PostMoveToDestinationArrangement) :-
     (
-%        % format('Matches ~q~n~n', [Matches]),
         get_dict('destination', Matches, DestinationStack),
         number_string(DestinationStackIndex, DestinationStack),
         nth1(DestinationStackIndex, PreviousArrangement, DestinationStackFromArrangement)
@@ -131,15 +159,19 @@ loop(HowManyTimes, Matches, PreviousArrangement, PostMoveToDestinationArrangemen
     (
         get_dict('how_many_crates', Matches, CratesCount),
         number_string(CratesToMove, CratesCount),
+        % format("How many crates to move ~d.~n~n", [CratesToMove]),
 
         get_dict('destination', Matches, DstStck),
         number_string(DstStckIdx, DstStck),
         nth1(DstStckIdx, PreviousArrangement, NewDestinationStackFromArrangement),
+        % format("Destination stack (#~d): ~q~n", [DstStckIdx, NewDestinationStackFromArrangement]),
 
         sublist(NewDestinationStackFromArrangement, CratesToMove, DestinationSubstack, R),
         reverse(DestinationSubstack, ReversedDestinationSubstack),
+        % format("Reversed destination substack (#~d): ~q~n", [DstStckIdx, ReversedDestinationSubstack]),
 
         append(ReversedDestinationSubstack, R, DestinationStack),
+        % format("Destination rest (#~d): ~q~n~n", [DstStckIdx, DestinationStack]),
 
         replace_stack_at_index(DstStckIdx, DestinationStack, PreviousArrangement, PostMoveToDestinationArrangement)
     ).
@@ -170,7 +202,7 @@ parse_moves(Stream, PreviousArrangement, Arrangement, CratesAtTheTop) :-
 read_until_eos(Stream, PreviousArrangement, Solution) :-
     not_eos(Stream) -> (
         \+ground(PreviousArrangement) -> (
-            parse_crates_arrangement(Stream, [[], [], []], ArrangementOut),
+            parse_crates_arrangement(Stream, [[], [], [],[], [], [],[], [], []], ArrangementOut),
             read_until_eos(Stream, ArrangementOut, Solution)
         )
         ;
@@ -184,7 +216,9 @@ read_until_eos(Stream, PreviousArrangement, Solution) :-
 
 find_solution(Solution) :-
     working_directory(_d, _d),
-    atomic_list_concat([_d, 'src/day_05/sample.txt'], AbsoluteFilePath),
+    format("~n[ Current dir is ~q ]", _d),
+
+    atomic_list_concat([_d, 'src/day_05/input.txt'], AbsoluteFilePath),
 
     ground(AbsoluteFilePath),
     exists_file(AbsoluteFilePath),
