@@ -4,44 +4,53 @@
 not_eos(Stream) :-
     \+at_end_of_stream(Stream).
 
+absolute_path(Path, AbsolutePath) :-
+    length(Path, 1), !,
+    AbsolutePath = '_sep_'.
+
+absolute_path([WorkingDirectory|Rest], AbsolutePath) :-
+    absolute_path(Rest, RestAbsPath),
+    (
+        RestAbsPath = '_sep_' ->
+        atomic_list_concat([RestAbsPath, WorkingDirectory], AbsPath);
+        atomic_list_concat([RestAbsPath, '_sep_', WorkingDirectory], AbsPath)
+    ),
+    string_to_atom(AbsPath, AbsolutePath).
+
 change_directory(Line, Path, NewPath, FilesIn, FilesOut) :-
     re_matchsub("\\$\\scd\\s(?<directory_name>\\.\\.|\\/|[a-z]+)", Line, Matches),
     get_dict('directory_name', Matches, Dir),
     (
         Dir = ".." -> (
             FilesOut = FilesIn,
-            [_|[ParentDir|R]] = Path,
-            NewPath = [ParentDir|R]
+            [_|R] = Path,
+            NewPath = R
         );(
-            (
-                Dir = "/" ->
-                string_to_atom("root", DirKey);
-                string_to_atom(Dir, DirKey)
-            ),
-            put_dict(DirKey, FilesIn, 0, FilesOut),
-            append([Dir], Path, NewPath)
+            append([Dir], Path, NewPath),
+            absolute_path(NewPath, DirKey),
+            put_dict(DirKey, FilesIn, 0, FilesOut)
         )
     ).
 
-directory(Line, [ParentDir|_], FsBeforeListing, FsAfterListing, FilesIn, FilesOut) :-
+directory(Line, ParentPath, FsBeforeListing, FsAfterListing, FilesIn, FilesOut) :-
     re_matchsub("dir\\s(?<directory_name>\\/|[a-z]+)", Line, Matches),
     get_dict('directory_name', Matches, Dir),
+
     string_to_atom(Dir, DirAtom),
+    append([DirAtom], ParentPath, WorkingDirectoryPath),
+    absolute_path(WorkingDirectoryPath, DirKey),
 
     (
-        ParentDir = "/" ->
-        string_to_atom("root", ParentDirKey);
-        string_to_atom(ParentDir, ParentDirKey)
-    ),
-    (
+        absolute_path(ParentPath, ParentDirKey),
+
         (
             get_dict(ParentDirKey, FsBeforeListing, DescendantDirectoriesIn),
             ground(DescendantDirectoriesIn)
-            -> append(DescendantDirectoriesIn, [DirAtom], DescendantDirectories);
-            DescendantDirectories = [DirAtom]
+            -> append(DescendantDirectoriesIn, [DirKey], DescendantDirectories);
+            DescendantDirectories = [DirKey]
         ),
-        string_to_atom(Dir, DirKey),
         put_dict(DirKey, FilesIn, 0, FilesOut),
+
         put_dict(ParentDirKey, FsBeforeListing, DescendantDirectories, FsAfterListing)
     ).
 
@@ -51,31 +60,17 @@ file_size(Line, Filesize, _) :-
     number_codes(Filesize, FilesizeCodes).
 
 list_files_in_directory(Line, ParentDirs, FsBeforeListing, NextFsAfterListing, FilesIn, FilesOut) :-
-    (
-        Command = "$ ls",
-        Line = Command,
-        NextFsAfterListing = FsBeforeListing,
-        FilesOut = FilesIn
-    );
-    (
-        NextFsAfterListing = FsBeforeListing,
-        file_size(Line, Filesize, ParentDirs),
-        ParentDirs = [WorkingDirectory|_],
-        (
-            WorkingDirectory = "/" ->
-            string_to_atom("root", DirectoryKey);
-            string_to_atom(WorkingDirectory, DirectoryKey)
-        ),
-        (
-            (
-                get_dict(DirectoryKey, FilesIn, FilesizeIn),
-                ground(FilesizeIn)
-                -> NewDirectorySize = FilesizeIn + Filesize;
-                NewDirectorySize = Filesize
-            ),
-            put_dict(DirectoryKey, FilesIn, NewDirectorySize, FilesOut)
-        )
-    );
+    Command = "$ ls",
+    Line = Command,
+    NextFsAfterListing = FsBeforeListing,
+    FilesOut = FilesIn
+    ;
+    NextFsAfterListing = FsBeforeListing,
+    file_size(Line, Filesize, ParentDirs),
+    absolute_path(ParentDirs, DirectoryKey),
+    get_dict(DirectoryKey, FilesIn, FilesizeIn),
+    put_dict(DirectoryKey, FilesIn, FilesizeIn + Filesize, FilesOut)
+    ;
     directory(Line, ParentDirs, FsBeforeListing, NextFsAfterListing, FilesIn, FilesOut).
 
 get_dir_filesize(Files, Dir, Filesize) :-
@@ -117,6 +112,7 @@ find_solution(Solution) :-
 
     dict_create(Files, files, []),
     dict_create(Directories, directories, []),
+
     execute_commands(Stream, [], Files, Directories, Solution),
 
     close(Stream).
